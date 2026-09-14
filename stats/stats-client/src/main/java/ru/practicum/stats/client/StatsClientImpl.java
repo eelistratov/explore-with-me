@@ -47,8 +47,8 @@ public class StatsClientImpl implements StatsClient {
             restTemplate.postForLocation(url, request);
             log.debug("Отправлен hit: app={}, uri={}, ip={}", hit.getApp(), hit.getUri(), hit.getIp());
         } catch (Exception e) {
-            log.error("Не удалось отправить hit на {}: {}", url, e.getMessage());
-            throw e;
+            log.error("Не удалось отправить hit на {}: app={}, uri={}, ip={}",
+                    url, hit.getApp(), hit.getUri(), hit.getIp(), e);
         }
     }
 
@@ -79,8 +79,9 @@ public class StatsClientImpl implements StatsClient {
             List<ViewStats> body = response.getBody();
             return body != null ? body : List.of();
         } catch (Exception e) {
-            log.error("Не удалось получить статистику с {}: {}", url, e.getMessage());
-            throw e;
+            log.error("Не удалось получить статистику с {}: start={}, end={}, uris={}, unique={}",
+                    url, start, end, uris, unique, e);
+            return List.of();
         }
     }
 }
