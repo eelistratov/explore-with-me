@@ -35,6 +35,7 @@ public class StatsServiceImpl implements StatsService {
                 .timestamp(LocalDateTime.parse(hit.getTimestamp(), FORMATTER))
                 .build();
         repository.save(entity);
+        repository.flush();
         log.debug("Сохранён хит: app={}, uri={}, ip={}, timestamp={}",
                 hit.getApp(), hit.getUri(), hit.getIp(), hit.getTimestamp());
     }

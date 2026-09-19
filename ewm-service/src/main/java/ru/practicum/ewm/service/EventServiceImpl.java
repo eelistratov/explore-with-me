@@ -185,7 +185,7 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Category with id=" + dto.getCategory() + " was not found"));
 
         if (dto.getEventDate().isBefore(LocalDateTime.now().plusHours(MIN_HOURS_BEFORE_EVENT))) {
-            throw new ConflictException(
+            throw new BadRequestException(
                     "Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: "
                             + dto.getEventDate());
         }
@@ -250,7 +250,7 @@ public class EventServiceImpl implements EventService {
         }
         if (dto.getEventDate() != null) {
             if (dto.getEventDate().isBefore(LocalDateTime.now().plusHours(MIN_HOURS_BEFORE_EVENT))) {
-                throw new ConflictException(
+                throw new BadRequestException(
                         "Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: "
                                 + dto.getEventDate());
             }
@@ -449,7 +449,7 @@ public class EventServiceImpl implements EventService {
         LocalDateTime start = LocalDateTime.of(2000, 1, 1, 0, 0);
         LocalDateTime end = LocalDateTime.now().plusYears(1);
 
-        List<ViewStats> stats = statsClient.getStats(start, end, uris, true);
+        List<ViewStats> stats = statsClient.getStats(start, end, uris, false);
         return stats.stream().collect(Collectors.toMap(
                 s -> parseEventIdFromUri(s.getUri()),
                 ViewStats::getHits,
