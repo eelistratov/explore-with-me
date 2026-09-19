@@ -19,6 +19,7 @@ import ru.practicum.stats.client.StatsClient;
 import ru.practicum.stats.dto.EndpointHit;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -33,6 +34,7 @@ import java.util.List;
 public class PublicEventController {
 
     private static final String APP_NAME = "ewm-main-service";
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final EventService eventService;
     private final StatsClient statsClient;
@@ -52,31 +54,31 @@ public class PublicEventController {
         log.info("GET /events: text={}, categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
 
+        List<EventShortDto> result = eventService.getPublishedEvents(
+                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
+
         sendHit(request);
 
-        return eventService.getPublishedEvents(
-                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
+        return result;
     }
 
     @GetMapping("/{id}")
     public EventFullDto getEvent(@PathVariable Long id, HttpServletRequest request) {
         log.info("GET /events/{}", id);
 
+        EventFullDto result = eventService.getPublishedEvent(id);
+
         sendHit(request);
 
-        return eventService.getPublishedEvent(id);
+        return result;
     }
 
-    /**
-     * Отправить информацию о запросе в stats-сервис.
-     * Ошибки не пробрасываются — статистика некритична (см. StatsClientImpl).
-     */
     private void sendHit(HttpServletRequest request) {
         EndpointHit hit = EndpointHit.builder()
                 .app(APP_NAME)
                 .uri(request.getRequestURI())
                 .ip(request.getRemoteAddr())
-                .timestamp(LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .timestamp(LocalDateTime.now().format(FORMATTER))
                 .build();
         statsClient.hit(hit);
     }

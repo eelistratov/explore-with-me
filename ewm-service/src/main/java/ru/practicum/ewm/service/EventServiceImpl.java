@@ -366,6 +366,11 @@ public class EventServiceImpl implements EventService {
             event.setDescription(dto.getDescription());
         }
         if (dto.getEventDate() != null) {
+            if (dto.getEventDate().isBefore(LocalDateTime.now())) {
+                throw new BadRequestException(
+                        "Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: "
+                                + dto.getEventDate());
+            }
             event.setEventDate(dto.getEventDate());
         }
         if (dto.getLocation() != null) {
