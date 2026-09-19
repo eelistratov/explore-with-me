@@ -73,13 +73,30 @@ public class PublicEventController {
         return result;
     }
 
+    /**
+     * Отправить информацию о запросе в stats-сервис.
+     * Ошибки не пробрасываются — статистика некритична (см. StatsClientImpl).
+     */
     private void sendHit(HttpServletRequest request) {
         EndpointHit hit = EndpointHit.builder()
                 .app(APP_NAME)
                 .uri(request.getRequestURI())
-                .ip(request.getRemoteAddr())
+                .ip(getClientIp(request))
                 .timestamp(LocalDateTime.now().format(FORMATTER))
                 .build();
         statsClient.hit(hit);
+    }
+
+    /**
+     * Получить IP клиента.
+     * Если есть заголовок {@code X-Forwarded-For} — берём первый адрес из него
+     * (это реальный клиент, а не прокси). Иначе — {@code request.getRemoteAddr()}.
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isEmpty()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }
