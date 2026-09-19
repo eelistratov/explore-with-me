@@ -1,0 +1,27 @@
+package ru.practicum.ewm.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+/**
+ * Данные для добавления новой категории.
+ * Соответствует схеме NewCategoryDto.
+ */
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
+public class NewCategoryDto {
+
+    @NotBlank
+    @Size(min = 1, max = 50)
+    private String name;
+}
