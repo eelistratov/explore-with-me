@@ -14,6 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import ru.practicum.stats.dto.EndpointHit;
 import ru.practicum.stats.dto.ViewStats;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -68,12 +69,12 @@ public class StatsClientImpl implements StatsClient {
             }
         }
 
-        String url = builder.encode().toUriString();
-        log.debug("Запрос статистики: {}", url);
+        URI uri = builder.build().encode().toUri();
+        log.debug("Запрос статистики: {}", uri);
 
         try {
             ResponseEntity<List<ViewStats>> response = restTemplate.exchange(
-                    url,
+                    uri,
                     HttpMethod.GET,
                     null,
                     new ParameterizedTypeReference<>() {
@@ -83,7 +84,7 @@ public class StatsClientImpl implements StatsClient {
             return body != null ? body : List.of();
         } catch (Exception e) {
             log.error("Не удалось получить статистику с {}: start={}, end={}, uris={}, unique={}",
-                    url, start, end, uris, unique, e);
+                    uri, start, end, uris, unique, e);
             return List.of();
         }
     }
