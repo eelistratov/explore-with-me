@@ -46,11 +46,11 @@ public class ErrorHandler {
     }
 
     @ExceptionHandler(ForbiddenException.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
     public ApiError handleForbidden(ForbiddenException e) {
-        log.debug("FORBIDDEN (409): {}", e.getMessage());
+        log.debug("403: {}", e.getMessage());
         return ApiError.builder()
-                .status("FORBIDDEN")
+                .status(HttpStatus.FORBIDDEN.name())
                 .reason("For the requested operation the conditions are not met.")
                 .message(e.getMessage())
                 .timestamp(LocalDateTime.now())

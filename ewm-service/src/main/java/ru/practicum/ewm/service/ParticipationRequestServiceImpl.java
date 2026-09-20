@@ -51,7 +51,7 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
         User requester = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " was not found"));
 
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdWithLock(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
 
         if (event.getInitiator().getId().equals(userId)) {
@@ -127,7 +127,7 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
                                                               Long eventId,
                                                               EventRequestStatusUpdateRequest dto) {
         checkUserExists(userId);
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdWithLock(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
 
         if (!event.getInitiator().getId().equals(userId)) {
@@ -157,29 +157,45 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
         if (dto.getStatus() == EventRequestStatusUpdateRequest.RequestUpdateStatus.REJECTED) {
             for (ParticipationRequest request : requests) {
                 request.setStatus(RequestStatus.REJECTED);
-                rejected.add(requestMapper.toDto(requestRepository.save(request)));
             }
+            List<ParticipationRequest> saved = requestRepository.saveAll(requests);
+            saved.forEach(r -> rejected.add(requestMapper.toDto(r)));
         } else {
             long confirmedCount = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
             int limit = event.getParticipantLimit();
 
+            List<ParticipationRequest> toConfirm = new ArrayList<>();
+            List<ParticipationRequest> toReject = new ArrayList<>();
+
             for (ParticipationRequest request : requests) {
                 if (limit > 0 && confirmedCount >= limit) {
                     request.setStatus(RequestStatus.REJECTED);
-                    rejected.add(requestMapper.toDto(requestRepository.save(request)));
+                    toReject.add(request);
                 } else {
                     request.setStatus(RequestStatus.CONFIRMED);
                     confirmedCount++;
-                    confirmed.add(requestMapper.toDto(requestRepository.save(request)));
+                    toConfirm.add(request);
                 }
+            }
+
+            if (!toConfirm.isEmpty()) {
+                requestRepository.saveAll(toConfirm)
+                        .forEach(r -> confirmed.add(requestMapper.toDto(r)));
+            }
+            if (!toReject.isEmpty()) {
+                requestRepository.saveAll(toReject)
+                        .forEach(r -> rejected.add(requestMapper.toDto(r)));
             }
 
             if (limit > 0 && confirmedCount >= limit) {
                 List<ParticipationRequest> pending =
                         requestRepository.findAllByEventIdAndStatus(eventId, RequestStatus.PENDING);
-                for (ParticipationRequest request : pending) {
-                    request.setStatus(RequestStatus.REJECTED);
-                    rejected.add(requestMapper.toDto(requestRepository.save(request)));
+                if (!pending.isEmpty()) {
+                    for (ParticipationRequest request : pending) {
+                        request.setStatus(RequestStatus.REJECTED);
+                    }
+                    requestRepository.saveAll(pending)
+                            .forEach(r -> rejected.add(requestMapper.toDto(r)));
                 }
             }
         }
