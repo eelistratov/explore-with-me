@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 /**
  * Полная информация о событии.
  * Соответствует схеме EventFullDto.
+ * Поле commentsCount — расширение для дополнительной функциональности (комментарии).
  */
 @Getter
 @Setter
@@ -57,4 +58,6 @@ public class EventFullDto {
     private String title;
 
     private Long views;
+
+    private Long commentsCount;
 }

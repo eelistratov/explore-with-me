@@ -82,3 +82,21 @@ CREATE TABLE IF NOT EXISTS compilation_events (
     CONSTRAINT fk_compilation_events_compilation FOREIGN KEY (compilation_id) REFERENCES compilations (id) ON DELETE CASCADE,
     CONSTRAINT fk_compilation_events_event FOREIGN KEY (event_id) REFERENCES events (id)
 );
+-- =========================================================
+-- Таблица комментариев к событиям
+-- =========================================================
+CREATE TABLE IF NOT EXISTS comments (
+    id         BIGSERIAL PRIMARY KEY,
+    text       VARCHAR(2000) NOT NULL,
+    event_id   BIGINT        NOT NULL,
+    author_id  BIGINT        NOT NULL,
+    created    TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated    TIMESTAMP WITHOUT TIME ZONE,
+    status     VARCHAR(20)   NOT NULL,
+    CONSTRAINT fk_comment_event FOREIGN KEY (event_id) REFERENCES events (id),
+    CONSTRAINT fk_comment_author FOREIGN KEY (author_id) REFERENCES users (id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_comments_event ON comments (event_id);
+CREATE INDEX IF NOT EXISTS idx_comments_author ON comments (author_id);
+CREATE INDEX IF NOT EXISTS idx_comments_status ON comments (status);
