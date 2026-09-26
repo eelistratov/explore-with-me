@@ -1,0 +1,464 @@
+{
+  "info": {
+    "name": "Explore With Me — Feature: Comments",
+    "description": "Postman-тесты для дополнительной функциональности «Комментарии». Проверяют коды ответов всех эндпоинтов фичи.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "secondUserId", "value": "", "type": "string" },
+    { "key": "categoryId", "value": "", "type": "string" },
+    { "key": "eventId", "value": "", "type": "string" },
+    { "key": "commentId", "value": "", "type": "string" },
+    { "key": "adminCommentId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "01. Admin — создание автора",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('userId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Comment Author\", \"email\": \"author@example.com\"}"
+        },
+        "url": "{{baseUrl}}/admin/users"
+      }
+    },
+    {
+      "name": "02. Admin — создание второго пользователя",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('secondUserId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Second User\", \"email\": \"second@example.com\"}"
+        },
+        "url": "{{baseUrl}}/admin/users"
+      }
+    },
+    {
+      "name": "03. Admin — создание категории",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('categoryId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Тестовая категория для комментариев\"}"
+        },
+        "url": "{{baseUrl}}/admin/categories"
+      }
+    },
+    {
+      "name": "04. Private — создание события",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('eventId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"annotation\": \"Событие для проверки комментариев к нему\", \"category\": {{categoryId}}, \"description\": \"Описание события достаточно длинное для валидации\", \"eventDate\": \"2027-12-31 15:00:00\", \"location\": {\"lat\": 55.75, \"lon\": 37.62}, \"paid\": false, \"participantLimit\": 0, \"requestModeration\": false, \"title\": \"Событие для комментариев\"}"
+        },
+        "url": "{{baseUrl}}/users/{{userId}}/events"
+      }
+    },
+    {
+      "name": "05. Admin — публикация события",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('state = PUBLISHED', () => pm.expect(json.state).to.eql('PUBLISHED'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"stateAction\": \"PUBLISH_EVENT\"}"
+        },
+        "url": "{{baseUrl}}/admin/events/{{eventId}}"
+      }
+    },
+    {
+      "name": "06. Private — создание комментария (201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.test('text присутствует', () => pm.expect(json.text).to.be.a('string'));",
+              "pm.test('author.id = userId', () => pm.expect(json.author.id).to.eql(Number(pm.collectionVariables.get('userId'))));",
+              "pm.test('event = eventId', () => pm.expect(json.event).to.eql(Number(pm.collectionVariables.get('eventId'))));",
+              "pm.collectionVariables.set('commentId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"Первый комментарий к событию\"}"
+        },
+        "url": "{{baseUrl}}/users/{{userId}}/comments?eventId={{eventId}}"
+      }
+    },
+    {
+      "name": "07. Private — создание комментария с пустым текстом (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"\"}"
+        },
+        "url": "{{baseUrl}}/users/{{userId}}/comments?eventId={{eventId}}"
+      }
+    },
+    {
+      "name": "08. Private — комментарий к неопубликованному событию (409)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 409', () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"Комментарий к неопубликованному событию\"}"
+        },
+        "url": "{{baseUrl}}/users/{{userId}}/comments?eventId=999999"
+      }
+    },
+    {
+      "name": "09. Private — комментарий к несуществующему событию (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"Комментарий к несуществующему событию\"}"
+        },
+        "url": "{{baseUrl}}/users/{{userId}}/comments?eventId=999999"
+      }
+    },
+    {
+      "name": "10. Public — список комментариев к событию (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Массив содержит комментарий', () => pm.expect(json.length).to.be.above(0));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/events/{{eventId}}/comments?from=0&size=10"
+      }
+    },
+    {
+      "name": "11. Public — список комментариев к несуществующему событию (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/events/999999/comments?from=0&size=10"
+      }
+    },
+    {
+      "name": "12. Private — свои комментарии (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Массив не пустой', () => pm.expect(json.length).to.be.above(0));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/users/{{userId}}/comments"
+      }
+    },
+    {
+      "name": "13. Private — редактирование комментария (200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('text изменён', () => pm.expect(json.text).to.eql('Изменённый текст комментария'));",
+              "pm.test('updated != null', () => pm.expect(json.updated).to.not.be.null);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"Изменённый текст комментария\"}"
+        },
+        "url": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}"
+      }
+    },
+    {
+      "name": "14. Private — редактирование чужого комментария (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"Попытка редактирования чужого комментария\"}"
+        },
+        "url": "{{baseUrl}}/users/{{secondUserId}}/comments/{{commentId}}"
+      }
+    },
+    {
+      "name": "15. Admin — создание комментария для удаления админом",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('adminCommentId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"Комментарий для проверки админского удаления\"}"
+        },
+        "url": "{{baseUrl}}/users/{{userId}}/comments?eventId={{eventId}}"
+      }
+    },
+    {
+      "name": "16. Admin — удаление комментария (204)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/admin/comments/{{adminCommentId}}"
+      }
+    },
+    {
+      "name": "17. Admin — удаление несуществующего комментария (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/admin/comments/999999"
+      }
+    },
+    {
+      "name": "18. Private — удаление своего комментария (204)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}"
+      }
+    },
+    {
+      "name": "19. Private — комментарий не виден после удаления (200, пустой)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Массив пустой после удаления', () => pm.expect(json.length).to.eql(0));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/users/{{userId}}/comments"
+      }
+    },
+    {
+      "name": "20. Private — повторное удаление удалённого комментария (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}"
+      }
+    }
+  ]
+}

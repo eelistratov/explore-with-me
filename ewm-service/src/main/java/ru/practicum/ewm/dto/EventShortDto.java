@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 /**
  * Краткая информация о событии.
  * Соответствует схеме EventShortDto.
+ * Поле commentsCount — расширение для дополнительной функциональности (комментарии).
  */
 @Getter
 @Setter
@@ -40,4 +41,6 @@ public class EventShortDto {
     private String title;
 
     private Long views;
+
+    private Long commentsCount;
 }

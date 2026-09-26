@@ -14,9 +14,11 @@ import ru.practicum.stats.dto.ViewStats;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
 import ru.practicum.ewm.mapper.CompilationMapper;
+import ru.practicum.ewm.model.CommentStatus;
 import ru.practicum.ewm.model.Compilation;
 import ru.practicum.ewm.model.Event;
 import ru.practicum.ewm.model.RequestStatus;
+import ru.practicum.ewm.repository.CommentRepository;
 import ru.practicum.ewm.repository.CompilationRepository;
 import ru.practicum.ewm.repository.EventRepository;
 import ru.practicum.ewm.repository.ParticipationRequestRepository;
@@ -41,10 +43,13 @@ public class CompilationServiceImpl implements CompilationService {
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
     private final ParticipationRequestRepository requestRepository;
+    private final CommentRepository commentRepository;
     private final CompilationMapper compilationMapper;
     private final StatsClient statsClient;
 
+    // ============================================================
     // Public API
+    // ============================================================
 
     @Override
     @Transactional(readOnly = true)
@@ -70,9 +75,10 @@ public class CompilationServiceImpl implements CompilationService {
 
         Map<Long, Long> confirmed = getConfirmedRequests(eventIds);
         Map<Long, Long> views = getViewsForEvents(eventIds);
+        Map<Long, Long> comments = getCommentsCounts(eventIds);
 
         return compilations.stream()
-                .map(c -> compilationMapper.toDto(c, confirmed, views))
+                .map(c -> compilationMapper.toDto(c, confirmed, views, comments))
                 .toList();
     }
 
@@ -87,11 +93,14 @@ public class CompilationServiceImpl implements CompilationService {
                 .toList();
         Map<Long, Long> confirmed = getConfirmedRequests(eventIds);
         Map<Long, Long> views = getViewsForEvents(eventIds);
+        Map<Long, Long> comments = getCommentsCounts(eventIds);
 
-        return compilationMapper.toDto(compilation, confirmed, views);
+        return compilationMapper.toDto(compilation, confirmed, views, comments);
     }
 
+    // ============================================================
     // Admin API
+    // ============================================================
 
     @Override
     @Transactional
@@ -107,9 +116,11 @@ public class CompilationServiceImpl implements CompilationService {
         log.debug("Создана подборка: id={}, title={}, events={}",
                 saved.getId(), saved.getTitle(), saved.getEvents().size());
 
-        Map<Long, Long> confirmed = getConfirmedRequests(saved.getEvents().stream().map(Event::getId).toList());
-        Map<Long, Long> views = getViewsForEvents(saved.getEvents().stream().map(Event::getId).toList());
-        return compilationMapper.toDto(saved, confirmed, views);
+        List<Long> eventIds = saved.getEvents().stream().map(Event::getId).toList();
+        Map<Long, Long> confirmed = getConfirmedRequests(eventIds);
+        Map<Long, Long> views = getViewsForEvents(eventIds);
+        Map<Long, Long> comments = getCommentsCounts(eventIds);
+        return compilationMapper.toDto(saved, confirmed, views, comments);
     }
 
     @Override
@@ -140,7 +151,8 @@ public class CompilationServiceImpl implements CompilationService {
         List<Long> eventIds = updated.getEvents().stream().map(Event::getId).toList();
         Map<Long, Long> confirmed = getConfirmedRequests(eventIds);
         Map<Long, Long> views = getViewsForEvents(eventIds);
-        return compilationMapper.toDto(updated, confirmed, views);
+        Map<Long, Long> comments = getCommentsCounts(eventIds);
+        return compilationMapper.toDto(updated, confirmed, views, comments);
     }
 
     @Override
@@ -152,11 +164,10 @@ public class CompilationServiceImpl implements CompilationService {
         log.debug("Удалена подборка: id={}", compId);
     }
 
+    // ============================================================
     // Вспомогательные методы
-    /**
-     * Загрузка событий по id.
-     * Если хотя бы одно событие не найдено — 404.
-     */
+    // ============================================================
+
     private Set<Event> loadEvents(Set<Long> eventIds) {
         if (eventIds == null || eventIds.isEmpty()) {
             return new LinkedHashSet<>();
@@ -168,9 +179,6 @@ public class CompilationServiceImpl implements CompilationService {
         return new LinkedHashSet<>(events);
     }
 
-    /**
-     * Батч-подсчёт подтверждённых заявок для списка событий.
-     */
     private Map<Long, Long> getConfirmedRequests(List<Long> eventIds) {
         if (eventIds.isEmpty()) {
             return Collections.emptyMap();
@@ -182,9 +190,6 @@ public class CompilationServiceImpl implements CompilationService {
         ));
     }
 
-    /**
-     * Батч-просмотры для списка событий (один запрос к stats-сервису).
-     */
     private Map<Long, Long> getViewsForEvents(List<Long> eventIds) {
         if (eventIds.isEmpty()) {
             return Collections.emptyMap();
@@ -195,11 +200,22 @@ public class CompilationServiceImpl implements CompilationService {
         LocalDateTime start = LocalDateTime.of(2000, 1, 1, 0, 0);
         LocalDateTime end = LocalDateTime.now().plusYears(1);
 
-        List<ViewStats> stats = statsClient.getStats(start, end, uris, true);
+        List<ViewStats> stats = statsClient.getStats(start, end, uris, false);
         return stats.stream().collect(Collectors.toMap(
                 s -> parseEventIdFromUri(s.getUri()),
                 ViewStats::getHits,
                 (a, b) -> a
+        ));
+    }
+
+    private Map<Long, Long> getCommentsCounts(List<Long> eventIds) {
+        if (eventIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Object[]> rows = commentRepository.countByEventIdsAndStatus(eventIds, CommentStatus.PUBLISHED);
+        return rows.stream().collect(Collectors.toMap(
+                row -> (Long) row[0],
+                row -> (Long) row[1]
         ));
     }
 

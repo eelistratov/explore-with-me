@@ -31,10 +31,12 @@ public class CompilationMapper {
      * @param compilation       сущность подборки
      * @param confirmedRequests Map: eventId → количество подтверждённых заявок
      * @param views             Map: eventId → количество просмотров
+     * @param commentsCounts    Map: eventId → количество комментариев
      */
     public CompilationDto toDto(Compilation compilation,
                                 Map<Long, Long> confirmedRequests,
-                                Map<Long, Long> views) {
+                                Map<Long, Long> views,
+                                Map<Long, Long> commentsCounts) {
         if (compilation == null) {
             return null;
         }
@@ -42,7 +44,8 @@ public class CompilationMapper {
                 .map(event -> eventMapper.toShortDto(
                         event,
                         confirmedRequests.getOrDefault(event.getId(), 0L),
-                        views.getOrDefault(event.getId(), 0L)
+                        views.getOrDefault(event.getId(), 0L),
+                        commentsCounts.getOrDefault(event.getId(), 0L)
                 ))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
@@ -57,9 +60,6 @@ public class CompilationMapper {
     /**
      * DTO создания → новая сущность.
      * Список событий устанавливается в сервисе: маппер не ходит в БД.
-     *
-     * @param dto    DTO новой подборки
-     * @param events уже загруженные события
      */
     public Compilation toEntity(NewCompilationDto dto, Set<Event> events) {
         if (dto == null) {

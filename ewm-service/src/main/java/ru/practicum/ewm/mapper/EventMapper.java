@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 /**
  * Маппер для событий.
  * Преобразует между сущностью Event и DTO.
- * Поля confirmedRequests и views заполняются снаружи — они вычисляемые.
+ * Поля confirmedRequests, views и commentsCount заполняются снаружи — они вычисляемые.
  */
 @Component
 public class EventMapper {
@@ -29,8 +29,9 @@ public class EventMapper {
      * @param event             сущность события
      * @param confirmedRequests количество подтверждённых заявок (из БД)
      * @param views             количество просмотров (из stats-сервиса)
+     * @param commentsCount     количество комментариев (из БД)
      */
-    public EventFullDto toFullDto(Event event, Long confirmedRequests, Long views) {
+    public EventFullDto toFullDto(Event event, Long confirmedRequests, Long views, Long commentsCount) {
         if (event == null) {
             return null;
         }
@@ -51,6 +52,7 @@ public class EventMapper {
                 .state(event.getState())
                 .title(event.getTitle())
                 .views(views != null ? views : 0L)
+                .commentsCount(commentsCount != null ? commentsCount : 0L)
                 .build();
     }
 
@@ -60,8 +62,9 @@ public class EventMapper {
      * @param event             сущность события
      * @param confirmedRequests количество подтверждённых заявок
      * @param views             количество просмотров
+     * @param commentsCount     количество комментариев
      */
-    public EventShortDto toShortDto(Event event, Long confirmedRequests, Long views) {
+    public EventShortDto toShortDto(Event event, Long confirmedRequests, Long views, Long commentsCount) {
         if (event == null) {
             return null;
         }
@@ -75,16 +78,13 @@ public class EventMapper {
                 .paid(event.getPaid())
                 .title(event.getTitle())
                 .views(views != null ? views : 0L)
+                .commentsCount(commentsCount != null ? commentsCount : 0L)
                 .build();
     }
 
     /**
      * DTO создания → новая сущность.
      * id, initiator, state, createdOn, publishedOn устанавливаются в сервисе.
-     *
-     * @param dto        DTO нового события
-     * @param category   уже загруженная категория
-     * @param initiator  уже загруженный пользователь
      */
     public Event toEntity(NewEventDto dto, Category category, User initiator) {
         if (dto == null) {
